@@ -3,6 +3,7 @@ package com.example.QuoraApp.services;
 import java.time.LocalDateTime;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.example.QuoraApp.adapter.QuestionAdapter;
@@ -10,6 +11,7 @@ import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
 import com.example.QuoraApp.models.Question;
 import com.example.QuoraApp.repositories.QuoraRepository;
+import com.example.QuoraApp.utils.CursorUtils;
 
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -43,5 +45,26 @@ public class QuoraService implements IQuoraService {
                 .doOnError(error -> System.out.println("Error Searching Questions: " + error))
                 .doOnComplete(() -> System.out.println("Questions Searched Successfully"));
                 
+    }
+
+    @Override
+    public Flux<QuestionResponseDto> getAllQuestions(String cursor, int size){
+        Pageable pageable = PageRequest.of(0, size);
+
+        if(!CursorUtils.isValidCursor(cursor)){
+            return questionRepository.findTop10ByOrderByCreatedAtAsc()
+                    .take(size)
+                    .map(QuestionAdapter::toQuestionResponseDto)
+                    .doOnError(error -> System.out.println("Error Searching Questions: " + error))
+                    .doOnComplete(() -> System.out.println("Questions Searched Successfully"));
+        }
+        else{
+            LocalDateTime cursorTimeStamp = CursorUtils.parseCursor(cursor);
+            return questionRepository.findByCreatedAtGreaterThanOrderByCreatedAtAsc(cursorTimeStamp, pageable)
+                        .map(QuestionAdapter::toQuestionResponseDto)
+                        .doOnError(error -> System.out.println("Error Searching Questions: " + error))
+                        .doOnComplete(() -> System.out.println("Questions Searched Successfully"));
+
+        }
     }
 }

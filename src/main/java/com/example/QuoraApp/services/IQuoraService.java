@@ -15,4 +15,6 @@ public interface IQuoraService {
 
     public Flux<QuestionResponseDto> searchQuestions(String searchTerm, int offset, int page);
 
+    public Flux<QuestionResponseDto> getAllQuestions(String cursor, int size);
+
 }

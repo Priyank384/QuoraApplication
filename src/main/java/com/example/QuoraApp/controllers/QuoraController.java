@@ -36,4 +36,13 @@ public class QuoraController {
     ){
         return quoraService.searchQuestions(query, page, size);
     }
+
+    @GetMapping()
+    public Flux<QuestionResponseDto> getAllQuestions(@RequestParam(required = false) String cursor,
+                                                     @RequestParam(defaultValue = "10") int size
+    ){
+        return quoraService.getAllQuestions(cursor, size)
+            .doOnError(error -> System.out.println("Error Searching Questions: " + error))
+            .doOnComplete(() -> System.out.println("Questions Searched Successfully"));
+    }
 }
