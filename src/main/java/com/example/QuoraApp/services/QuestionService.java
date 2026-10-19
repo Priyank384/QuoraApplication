@@ -9,8 +9,11 @@ import org.springframework.stereotype.Service;
 import com.example.QuoraApp.adapter.QuestionAdapter;
 import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
+import com.example.QuoraApp.enums.TargetType;
+import com.example.QuoraApp.events.ViewCountEvent;
 import com.example.QuoraApp.models.Question;
-import com.example.QuoraApp.repositories.QuoraRepository;
+import com.example.QuoraApp.producers.KafkaEventProducer;
+import com.example.QuoraApp.repositories.QuestionRepository;
 import com.example.QuoraApp.utils.CursorUtils;
 
 import lombok.AllArgsConstructor;
@@ -19,9 +22,10 @@ import reactor.core.publisher.Mono;
 
 @Service
 @AllArgsConstructor
-public class QuoraService implements IQuoraService {
+public class QuestionService implements IQuestionService {
 
-    private final QuoraRepository questionRepository;
+    private final QuestionRepository questionRepository;
+    private final KafkaEventProducer kafkaEventProducer;
     
     @Override
     public Mono<QuestionResponseDto> createQuestion(QuestionRequestDto questionRequestDto) {
@@ -66,5 +70,23 @@ public class QuoraService implements IQuoraService {
                         .doOnComplete(() -> System.out.println("Questions Searched Successfully"));
 
         }
+    }
+
+    @Override
+    public Mono<QuestionResponseDto> getQuestionById(String id){
+
+        return questionRepository.findById(id)
+            .map(QuestionAdapter::toQuestionResponseDto)
+            .doOnError(error -> System.out.println("Error Fetching Questions: " + error))
+            .doOnSuccess(response -> {
+                System.out.println("Questions Fetched Successfully: " + response);
+                ViewCountEvent viewCountEvent = ViewCountEvent.builder()
+                                                    .targetId(id)
+                                                    .targetType(TargetType.QUESTION)
+                                                    .timestamp(LocalDateTime.now())
+                                                    .build();
+                
+                kafkaEventProducer.publishViewCountEvent(viewCountEvent);
+            });
     }
 }

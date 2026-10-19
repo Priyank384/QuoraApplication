@@ -12,7 +12,7 @@ import com.example.QuoraApp.models.Question;
 import reactor.core.publisher.Flux;
 
 @Repository
-public interface QuoraRepository extends ReactiveMongoRepository<Question, String> {
+public interface QuestionRepository extends ReactiveMongoRepository<Question, String> {
 
     @Query("{ '$or': [ { 'title': { $regex: ?0, $options: 'i'} }, { 'content' : { $regex: ?0, $options: 'i' } } ] }")
     Flux<Question> findByTitleOrContentContainingIgnoreCase(String searchTerm, Pageable pageable);
